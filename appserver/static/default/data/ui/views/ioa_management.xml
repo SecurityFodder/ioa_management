@@ -1,0 +1,88 @@
+<form version="1.1" script="ioa_management.js">
+    <label>CrowdStrike IOA Management</label>
+    <description>Add, remove, and view CrowdStrike IOA values in the ioa_filter KV store.</description>
+
+    <fieldset submitButton="false">
+        <input type="time" token="time_tok" searchWhenChanged="true">
+            <label>Time Range</label>
+            <default>
+                <earliest>-24h@h</earliest>
+                <latest>now</latest>
+            </default>
+        </input>
+    </fieldset>
+
+    <row>
+        <panel>
+            <title>Current IOA Values</title>
+            <table id="current_ioa_table">
+                <search>
+                    <query>
+                        | inputlookup ioa_filter_lookup
+                        | table _time, reference, signature_id
+                    </query>
+                    <earliest>$time_tok.earliest$</earliest>
+                    <latest>$time_tok.latest$</latest>
+                </search>
+                <option name="drilldown">none</option>
+            </table>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>Add New IOA</title>
+            <input type="text" token="reference_tok" searchWhenChanged="true">
+                <label>Reference (e.g., Filename, Registry Key, etc.)</label>
+            </input>
+            <input type="text" token="signature_id_tok" searchWhenChanged="true">
+                <label>Signature ID</label>
+            </input>
+            <input type="multiselect" token="sig_ids" searchWhenChanged="true">
+                <label>Select Signature ID from existing values</label>
+                <choice value="*">All</choice>
+                <delimiter> </delimiter>
+                <search>
+                    <query>
+                        | inputlookup ioa_filter_lookup | stats dc(signature_id) as count by
+                        signature_id | table signature_id
+                    </query>
+                </search>
+                <fieldForLabel>signature_id</fieldForLabel>
+                <fieldForValue>signature_id</fieldForValue>
+            </input>
+            <html>
+                <button id="add_button">Add IOA</button>
+            </html>
+        </panel>
+        <panel>
+            <title>Remove IOA</title>
+            <input type="dropdown" token="remove_reference_tok" searchWhenChanged="true"
+                id="remove_ioa_dropdown">
+                <label>Select Reference to Remove</label>
+                <search>
+                    <query>| inputlookup ioa_filter_lookup | dedup reference | table reference</query>
+                </search>
+                <fieldForLabel>reference</fieldForLabel>
+                <fieldForValue>reference</fieldForValue>
+            </input>
+            <html>
+                <button id="remove_button">Remove IOA</button>
+            </html>
+        </panel>
+    </row>
+
+    <row>
+        <panel>
+            <title>Audit Trail</title>
+            <table>
+                <search>
+                    <query>| inputlookup ioa_audit_log | table _time, user, action, reference,
+                        signature_id, old_reference, old_signature_id</query>
+                    <earliest>$time_tok.earliest$</earliest>
+                    <latest>$time_tok.latest$</latest>
+                </search>
+            </table>
+        </panel>
+    </row>
+</form>
